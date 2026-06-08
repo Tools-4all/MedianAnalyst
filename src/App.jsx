@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -8,6 +7,7 @@ import InflationPage from './pages/InflationPage';
 import NewsletterPage from './pages/NewsletterPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import CalculatorsDashboardPage from './pages/CalculatorsDashboardPage';
+import AdminNewsletterPage from './pages/AdminNewsletterPage';
 
 function App() {
   return (
@@ -21,6 +21,7 @@ function App() {
         <Route path="calculators/:calculatorId" element={<PlaceholderPage />} />
         <Route path="newsletter" element={<NewsletterPage />} />
       </Route>
+      <Route path="sodimeod" element={<AdminNewsletterPage />} />
     </Routes>
   );
 }

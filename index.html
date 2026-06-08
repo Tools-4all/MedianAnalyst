@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MedianAnalyst | Professional Financial Analysis</title>
     <!-- Google Fonts & Material Symbols -->
@@ -10,6 +10,22 @@
   </head>
   <body class="bg-surface text-on-surface font-body-md selection:bg-secondary-container selection:text-on-secondary-container">
     <div id="root"></div>
+    <script>
+      // Resolves redirects from 404.html on GitHub Pages for client-side routes.
+      (function redirectFrom404(location) {
+        if (!location.search || location.search[1] !== '/') {
+          return;
+        }
+
+        const decoded = location.search
+          .slice(1)
+          .split('&')
+          .map((segment) => segment.replace(/~and~/g, '&'))
+          .join('?');
+
+        window.history.replaceState(null, '', `${location.pathname.slice(0, -1)}${decoded}${location.hash}`);
+      })(window.location);
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
