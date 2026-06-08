@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import useCalculatorConsts from '../hooks/useCalculatorConsts';
 
 /**
  * MarketValueCalculator
@@ -19,19 +20,16 @@ import React, { useState, useMemo } from 'react';
  *   Salmon [Explanation]  → UI labels and tooltips
  */
 
-// ─── Constants from the spreadsheet (Light Blue cells) ───────────────────────
-const TIME_ROOT_250_DAYS = 15.81;       // Row 12: √250 trading days
-const GOV_ACTIVITY_COEFFICIENT = 2.5;   // Row 26: Government Activity Coefficient
-const HUNDRED_PERCENT = 100;            // Row 35: 100%
-
-// ─── Default user-input values (Pink / Grey cells) ──────────────────────────
-const DEFAULTS = {
-  corporateEquities: 47185,       // Row 6: Corporate Equities (in thousands of billions)
-  currentGDP: 31442,              // Row 9/23: Current GDP in the last quarter
-  marketableTreasuryDebt: 29299,  // Row 18: Market Value of Marketable Treasury Debt
-  federalBudgetDeficit: 1853,     // Row 20: The federal budget deficit
-  inflationFromPrime: 1.61,       // Row 29: Inflation derived from the prime
-  movingAverageDJIA: 48000,       // Row 43: Moving average of DJIA index (last 3 months)
+const MARKET_CONST_DEFAULTS = {
+  timeRoot250Days: 15.81,
+  govActivityCoefficient: 2.5,
+  hundredPercent: 100,
+  defaultCorporateEquities: 47185,
+  defaultCurrentGDP: 31442,
+  defaultMarketableTreasuryDebt: 29299,
+  defaultFederalBudgetDeficit: 1853,
+  defaultInflationFromPrime: 1.61,
+  defaultMovingAverageDJIA: 48000,
 };
 
 // ─── Pure calculation engine ─────────────────────────────────────────────────
@@ -42,6 +40,10 @@ function computeMarketValue({
   federalBudgetDeficit,
   inflationFromPrime,
   movingAverageDJIA,
+}, {
+  timeRoot250Days,
+  govActivityCoefficient,
+  hundredPercent,
 }) {
   // Validate & sanitize all inputs
   const ce   = Math.max(0, corporateEquities || 0);
@@ -56,7 +58,7 @@ function computeMarketValue({
   const capitalToGDPRatio = ce / gdp;
 
   // Row 13: Annual Risk = Capital-to-GDP Ratio × √250 trading days (15.81)
-  const annualRisk = capitalToGDPRatio * TIME_ROOT_250_DAYS;
+  const annualRisk = capitalToGDPRatio * timeRoot250Days;
 
   // ── Step 2: Calculate the Odds ─────────────────────────────────────────────
   // Row 21: Total Marketable Debt = Marketable Treasury Debt + Federal Budget Deficit
@@ -66,7 +68,7 @@ function computeMarketValue({
   const marketableDebtToGDP = (totalMarketableDebt / gdp) * 100;
 
   // Row 27: Marketable Debt Ratio = (Marketable Debt-to-GDP Ratio × 2.5) ÷ 100
-  const marketableDebtRatio = (marketableDebtToGDP * GOV_ACTIVITY_COEFFICIENT) / 100;
+  const marketableDebtRatio = (marketableDebtToGDP * govActivityCoefficient) / 100;
 
   // Row 30: Alternative Interest Rate = Marketable Debt Ratio × Inflation from Prime
   const alternativeInterestRate = marketableDebtRatio * ifp;
@@ -74,7 +76,7 @@ function computeMarketValue({
   // ── Step 3: Calculate the Odds Ratio ───────────────────────────────────────
   // Row 38: Expected Return = 100 ÷ Alternative Interest Rate
   const expectedReturn = alternativeInterestRate > 0
-    ? HUNDRED_PERCENT / alternativeInterestRate
+    ? hundredPercent / alternativeInterestRate
     : 0;
 
   // Row 41: Expected Movement = Expected Return ÷ Annual Risk
@@ -177,29 +179,55 @@ function OperationIndicator({ op }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function MarketValueCalculator() {
-  const [corporateEquities, setCorporateEquities]       = useState(DEFAULTS.corporateEquities);
-  const [currentGDP, setCurrentGDP]                     = useState(DEFAULTS.currentGDP);
-  const [marketableTreasuryDebt, setMarketableTreasuryDebt] = useState(DEFAULTS.marketableTreasuryDebt);
-  const [federalBudgetDeficit, setFederalBudgetDeficit] = useState(DEFAULTS.federalBudgetDeficit);
-  const [inflationFromPrime, setInflationFromPrime]     = useState(DEFAULTS.inflationFromPrime);
-  const [movingAverageDJIA, setMovingAverageDJIA]       = useState(DEFAULTS.movingAverageDJIA);
+  const { config } = useCalculatorConsts('market-value', MARKET_CONST_DEFAULTS);
+  const [corporateEquities, setCorporateEquities] = useState(config.defaultCorporateEquities);
+  const [currentGDP, setCurrentGDP] = useState(config.defaultCurrentGDP);
+  const [marketableTreasuryDebt, setMarketableTreasuryDebt] = useState(
+    config.defaultMarketableTreasuryDebt,
+  );
+  const [federalBudgetDeficit, setFederalBudgetDeficit] = useState(
+    config.defaultFederalBudgetDeficit,
+  );
+  const [inflationFromPrime, setInflationFromPrime] = useState(config.defaultInflationFromPrime);
+  const [movingAverageDJIA, setMovingAverageDJIA] = useState(config.defaultMovingAverageDJIA);
 
   const results = useMemo(
-    () => computeMarketValue({
-      corporateEquities, currentGDP, marketableTreasuryDebt,
-      federalBudgetDeficit, inflationFromPrime, movingAverageDJIA,
-    }),
-    [corporateEquities, currentGDP, marketableTreasuryDebt,
-     federalBudgetDeficit, inflationFromPrime, movingAverageDJIA]
+    () =>
+      computeMarketValue(
+        {
+          corporateEquities,
+          currentGDP,
+          marketableTreasuryDebt,
+          federalBudgetDeficit,
+          inflationFromPrime,
+          movingAverageDJIA,
+        },
+        {
+          timeRoot250Days: config.timeRoot250Days,
+          govActivityCoefficient: config.govActivityCoefficient,
+          hundredPercent: config.hundredPercent,
+        },
+      ),
+    [
+      config.govActivityCoefficient,
+      config.hundredPercent,
+      config.timeRoot250Days,
+      corporateEquities,
+      currentGDP,
+      federalBudgetDeficit,
+      inflationFromPrime,
+      marketableTreasuryDebt,
+      movingAverageDJIA,
+    ],
   );
 
   const handleReset = () => {
-    setCorporateEquities(DEFAULTS.corporateEquities);
-    setCurrentGDP(DEFAULTS.currentGDP);
-    setMarketableTreasuryDebt(DEFAULTS.marketableTreasuryDebt);
-    setFederalBudgetDeficit(DEFAULTS.federalBudgetDeficit);
-    setInflationFromPrime(DEFAULTS.inflationFromPrime);
-    setMovingAverageDJIA(DEFAULTS.movingAverageDJIA);
+    setCorporateEquities(config.defaultCorporateEquities);
+    setCurrentGDP(config.defaultCurrentGDP);
+    setMarketableTreasuryDebt(config.defaultMarketableTreasuryDebt);
+    setFederalBudgetDeficit(config.defaultFederalBudgetDeficit);
+    setInflationFromPrime(config.defaultInflationFromPrime);
+    setMovingAverageDJIA(config.defaultMovingAverageDJIA);
   };
 
   return (
@@ -248,7 +276,7 @@ export default function MarketValueCalculator() {
         <ParamRow
           label="Time Root of 250 Trading Days"
           sublabel="√250 ≈ 15.81 (fixed constant)"
-          value={TIME_ROOT_250_DAYS}
+          value={config.timeRoot250Days}
           onChange={() => {}}
           disabled
         />
@@ -296,7 +324,7 @@ export default function MarketValueCalculator() {
         <ParamRow
           label="Government Activity Coefficient"
           sublabel="Fixed at 2.5"
-          value={GOV_ACTIVITY_COEFFICIENT}
+          value={config.govActivityCoefficient}
           onChange={() => {}}
           disabled
         />
@@ -325,7 +353,7 @@ export default function MarketValueCalculator() {
         <ParamRow
           label="100 Percent"
           sublabel="Fixed constant"
-          value={HUNDRED_PERCENT}
+          value={config.hundredPercent}
           onChange={() => {}}
           disabled
         />

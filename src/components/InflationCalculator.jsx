@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import useCalculatorConsts from '../hooks/useCalculatorConsts';
 
 /**
  * InflationCalculator
@@ -13,33 +14,40 @@ import React, { useState, useMemo } from 'react';
  *   Salmon [Explanation]  → Card summaries, labels, and text callouts
  */
 
-// ─── Constants (Light Blue cells) ────────────────────────────────────────────
-const FIXED_RISK_PREMIUM = 1.5;         // Step 1: Fixed risk premium
-const BIAS_ELEMENT_1 = 0.15;            // Step 2: Biases known from research (lower limit)
-const BIAS_ELEMENT_2 = 0.40;            // Step 2: Biases known from research (upper limit)
-const BIAS_ELEMENT_3 = 0.00;            // Step 2: My calculation (no bias element)
-const NUMBER_OF_ELEMENTS = 3;           // Step 2: Three elements of bias
-const PROBABILITY_BIAS_UP_DOWN = 0.5;   // Step 2: The probability that the bias will be up or down is 0.5
-
-// ─── Default Input Values (Pink / Grey cells) ─────────────────────────────────
-const DEFAULTS = {
-  primeRate: 6.75,                      // Prime Rate
-  fedFundsRate: 3.64,                   // Fed Funds Rate
+const INFLATION_CONST_DEFAULTS = {
+  fixedRiskPremium: 1.5,
+  biasElement1: 0.15,
+  biasElement2: 0.4,
+  biasElement3: 0,
+  numberOfElements: 3,
+  probabilityBiasUpDown: 0.5,
+  defaultPrimeRate: 6.75,
+  defaultFedFundsRate: 3.64,
 };
 
 // ─── Pure Calculation Engine ─────────────────────────────────────────────────
-function computeInflation({ primeRate, fedFundsRate }) {
+function computeInflation(
+  { primeRate, fedFundsRate },
+  {
+    fixedRiskPremium,
+    biasElement1,
+    biasElement2,
+    biasElement3,
+    numberOfElements,
+    probabilityBiasUpDown,
+  },
+) {
   const pr = Math.max(0, primeRate || 0);
   const ffr = Math.max(0, fedFundsRate || 0);
 
   // Step 1: Financial Inflation Engine
   const internalMiddleCalculation = pr - ffr;
-  const financialInflation = internalMiddleCalculation - FIXED_RISK_PREMIUM;
+  const financialInflation = internalMiddleCalculation - fixedRiskPremium;
 
   // Step 2: Calculation Bias Model
-  const totalBias = BIAS_ELEMENT_1 + BIAS_ELEMENT_2 + BIAS_ELEMENT_3;
-  const averageBias = totalBias / NUMBER_OF_ELEMENTS;
-  const finalAppliedBias = averageBias * PROBABILITY_BIAS_UP_DOWN;
+  const totalBias = biasElement1 + biasElement2 + biasElement3;
+  const averageBias = totalBias / Math.max(1, numberOfElements);
+  const finalAppliedBias = averageBias * probabilityBiasUpDown;
 
   return {
     internalMiddleCalculation,
@@ -121,17 +129,38 @@ function OperationIndicator({ op }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function InflationCalculator() {
-  const [primeRate, setPrimeRate] = useState(DEFAULTS.primeRate);
-  const [fedFundsRate, setFedFundsRate] = useState(DEFAULTS.fedFundsRate);
+  const { config } = useCalculatorConsts('inflation', INFLATION_CONST_DEFAULTS);
+  const [primeRate, setPrimeRate] = useState(config.defaultPrimeRate);
+  const [fedFundsRate, setFedFundsRate] = useState(config.defaultFedFundsRate);
 
   const results = useMemo(
-    () => computeInflation({ primeRate, fedFundsRate }),
-    [primeRate, fedFundsRate]
+    () =>
+      computeInflation(
+        { primeRate, fedFundsRate },
+        {
+          fixedRiskPremium: config.fixedRiskPremium,
+          biasElement1: config.biasElement1,
+          biasElement2: config.biasElement2,
+          biasElement3: config.biasElement3,
+          numberOfElements: config.numberOfElements,
+          probabilityBiasUpDown: config.probabilityBiasUpDown,
+        },
+      ),
+    [
+      config.biasElement1,
+      config.biasElement2,
+      config.biasElement3,
+      config.fixedRiskPremium,
+      config.numberOfElements,
+      config.probabilityBiasUpDown,
+      fedFundsRate,
+      primeRate,
+    ],
   );
 
   const handleReset = () => {
-    setPrimeRate(DEFAULTS.primeRate);
-    setFedFundsRate(DEFAULTS.fedFundsRate);
+    setPrimeRate(config.defaultPrimeRate);
+    setFedFundsRate(config.defaultFedFundsRate);
   };
 
   return (
@@ -202,7 +231,7 @@ export default function InflationCalculator() {
         <ParamRow
           label="Fixed Risk Premium"
           sublabel="Constant risk premium coefficient"
-          value={FIXED_RISK_PREMIUM}
+          value={config.fixedRiskPremium}
           onChange={() => {}}
           disabled
           suffix="%"
@@ -237,7 +266,7 @@ export default function InflationCalculator() {
         <ParamRow
           label="Bias Element 1"
           sublabel="Lower limit of known research bias"
-          value={BIAS_ELEMENT_1}
+          value={config.biasElement1}
           onChange={() => {}}
           disabled
           suffix="%"
@@ -248,7 +277,7 @@ export default function InflationCalculator() {
         <ParamRow
           label="Bias Element 2"
           sublabel="Upper limit of known research bias"
-          value={BIAS_ELEMENT_2}
+          value={config.biasElement2}
           onChange={() => {}}
           disabled
           suffix="%"
@@ -259,7 +288,7 @@ export default function InflationCalculator() {
         <ParamRow
           label="Bias Element 3 (My Calculation)"
           sublabel="Assumption of zero bias scenario"
-          value={BIAS_ELEMENT_3}
+          value={config.biasElement3}
           onChange={() => {}}
           disabled
           suffix="%"
@@ -275,7 +304,7 @@ export default function InflationCalculator() {
         <ParamRow
           label="Number of Elements"
           sublabel="Three elements of bias"
-          value={NUMBER_OF_ELEMENTS}
+          value={config.numberOfElements}
           onChange={() => {}}
           disabled
         />
@@ -291,7 +320,7 @@ export default function InflationCalculator() {
         <ParamRow
           label="Probability of Bias Up/Down"
           sublabel="Fixed probability (0.5)"
-          value={PROBABILITY_BIAS_UP_DOWN}
+          value={config.probabilityBiasUpDown}
           onChange={() => {}}
           disabled
         />

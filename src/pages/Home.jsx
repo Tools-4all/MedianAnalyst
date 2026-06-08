@@ -1,4 +1,3 @@
-import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import Hero from '../components/Hero';
 import About from '../components/About';

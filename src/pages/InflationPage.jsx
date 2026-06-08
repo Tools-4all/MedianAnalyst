@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import InflationCalculator from '../components/InflationCalculator';
 import CalculatorDisclaimer from '../components/CalculatorDisclaimer';

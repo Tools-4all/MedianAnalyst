@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import MarketValueCalculator from '../components/MarketValueCalculator';
 import CalculatorDisclaimer from '../components/CalculatorDisclaimer';

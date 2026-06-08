@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import useCalculatorConsts from '../hooks/useCalculatorConsts';
 
 /**
  * BankValueCalculator
@@ -11,20 +12,20 @@ import React, { useState, useMemo } from 'react';
  * Step D: Range Measurement
  */
 
-// ─── Constants from the spreadsheet ──────────────────────────────────────────
-const BASE_EQUITY = 100;
-const FINANCIAL_MULTIPLIER = 2.71;
-
-// ─── Default user-input values ───────────────────────────────────────────────
-const DEFAULTS = {
-  dividendPct: 4,          // Row 13: average dividend % (displayed as 4%)
-  realGrowth: 1.9,         // Row 18: FOMC long-term real growth estimate
-  pceIndex: 2.9,           // Row 20: average quarterly PCE index
-  interestRate: 4.93,      // Row 34: interest derived from Machete calculator
+const BANK_CONST_DEFAULTS = {
+  baseEquity: 100,
+  financialMultiplier: 2.71,
+  defaultDividendPct: 4,
+  defaultRealGrowth: 1.9,
+  defaultPceIndex: 2.9,
+  defaultInterestRate: 4.93,
 };
 
 // ─── Pure calculation engine ─────────────────────────────────────────────────
-function computeBankValue({ dividendPct, realGrowth, pceIndex, interestRate }) {
+function computeBankValue(
+  { dividendPct, realGrowth, pceIndex, interestRate },
+  { baseEquity, financialMultiplier },
+) {
   // Validate & sanitize
   const dPct = Math.max(0, dividendPct || 0) / 100;   // convert 4 → 0.04
   const rg   = Math.max(0, realGrowth || 0);
@@ -32,11 +33,11 @@ function computeBankValue({ dividendPct, realGrowth, pceIndex, interestRate }) {
   const ir   = Math.max(0, interestRate || 0);
 
   // ── Step A ─────────────────────────────────────────────────────────────────
-  const equityWithDividend = (1 + dPct) * BASE_EQUITY;
+  const equityWithDividend = (1 + dPct) * baseEquity;
 
   // ── Step B ─────────────────────────────────────────────────────────────────
   const nominalGrowth = rg * pce;
-  const assetValue    = nominalGrowth * FINANCIAL_MULTIPLIER;
+  const assetValue    = nominalGrowth * financialMultiplier;
   const economicValueEOY = equityWithDividend * ((assetValue / 100) + 1);
   const marketToEconomicRatio = economicValueEOY / 100;
 
@@ -140,21 +141,36 @@ function OperationIndicator({ op }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function BankValueCalculator() {
-  const [dividendPct, setDividendPct]     = useState(DEFAULTS.dividendPct);
-  const [realGrowth, setRealGrowth]       = useState(DEFAULTS.realGrowth);
-  const [pceIndex, setPceIndex]           = useState(DEFAULTS.pceIndex);
-  const [interestRate, setInterestRate]   = useState(DEFAULTS.interestRate);
+  const { config } = useCalculatorConsts('bank-value', BANK_CONST_DEFAULTS);
+  const [dividendPct, setDividendPct] = useState(config.defaultDividendPct);
+  const [realGrowth, setRealGrowth] = useState(config.defaultRealGrowth);
+  const [pceIndex, setPceIndex] = useState(config.defaultPceIndex);
+  const [interestRate, setInterestRate] = useState(config.defaultInterestRate);
 
   const results = useMemo(
-    () => computeBankValue({ dividendPct, realGrowth, pceIndex, interestRate }),
-    [dividendPct, realGrowth, pceIndex, interestRate]
+    () =>
+      computeBankValue(
+        { dividendPct, realGrowth, pceIndex, interestRate },
+        {
+          baseEquity: config.baseEquity,
+          financialMultiplier: config.financialMultiplier,
+        },
+      ),
+    [
+      config.baseEquity,
+      config.financialMultiplier,
+      dividendPct,
+      interestRate,
+      pceIndex,
+      realGrowth,
+    ],
   );
 
   const handleReset = () => {
-    setDividendPct(DEFAULTS.dividendPct);
-    setRealGrowth(DEFAULTS.realGrowth);
-    setPceIndex(DEFAULTS.pceIndex);
-    setInterestRate(DEFAULTS.interestRate);
+    setDividendPct(config.defaultDividendPct);
+    setRealGrowth(config.defaultRealGrowth);
+    setPceIndex(config.defaultPceIndex);
+    setInterestRate(config.defaultInterestRate);
   };
 
   // Determine valuation signal
@@ -183,7 +199,7 @@ export default function BankValueCalculator() {
         <ParamRow
           label="Base Equity (Previous Year End)"
           sublabel="Fixed at 100%"
-          value={BASE_EQUITY}
+          value={config.baseEquity}
           onChange={() => {}}
           disabled
         />
@@ -224,7 +240,7 @@ export default function BankValueCalculator() {
         <ParamRow
           label="Financial Multiplier"
           sublabel="Every dollar of growth generates 2.71 financial assets"
-          value={FINANCIAL_MULTIPLIER}
+          value={config.financialMultiplier}
           onChange={() => {}}
           disabled
         />

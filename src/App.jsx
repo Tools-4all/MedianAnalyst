@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import BankValuePage from './pages/BankValuePage';
@@ -7,7 +7,9 @@ import InflationPage from './pages/InflationPage';
 import NewsletterPage from './pages/NewsletterPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import CalculatorsDashboardPage from './pages/CalculatorsDashboardPage';
-import AdminNewsletterPage from './pages/AdminNewsletterPage';
+import AdminBlogsPage from './pages/AdminBlogsPage';
+import AdminCalculatorConstsPage from './pages/AdminCalculatorConstsPage';
+import AdminShellPage from './pages/AdminShellPage';
 
 function App() {
   return (
@@ -21,7 +23,11 @@ function App() {
         <Route path="calculators/:calculatorId" element={<PlaceholderPage />} />
         <Route path="newsletter" element={<NewsletterPage />} />
       </Route>
-      <Route path="sodimeod" element={<AdminNewsletterPage />} />
+      <Route path="sodimeod" element={<AdminShellPage />}>
+        <Route index element={<Navigate to="blogs" replace />} />
+        <Route path="blogs" element={<AdminBlogsPage />} />
+        <Route path="calculator-consts" element={<AdminCalculatorConstsPage />} />
+      </Route>
     </Routes>
   );
 }

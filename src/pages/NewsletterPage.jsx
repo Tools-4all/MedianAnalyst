@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { watchNewsletterPosts } from '../services/newsletterService';
