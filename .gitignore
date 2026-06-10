@@ -12,8 +12,6 @@ dist
 dist-ssr
 *.local
 
-
-
 # Firebase local artifacts
 .firebase/
 firebase-debug.log*
