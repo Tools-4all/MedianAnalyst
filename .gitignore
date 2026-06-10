@@ -13,9 +13,9 @@ dist-ssr
 *.local
 
 # Environment secrets
-# .env
-# .env.*
-# !.env.example
+.env
+.env.*
+!.env.example
 
 # Firebase local artifacts
 .firebase/
